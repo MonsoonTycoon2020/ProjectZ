@@ -4,56 +4,96 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    // Update is called once per frame
-    private float horizontal;
-    private float speed = 8f;
-    private float jumpingPower = 8f;
-    private bool isFacingRight = true;
 
     [SerializeField] private Rigidbody rb;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private LayerMask wallLayer;
+    [SerializeField] private float speed = 8f;
+    [SerializeField] private float jumpPower = 8f;
+    private float horizontalInput;
+    private bool isFacingRight = true;
+    private Animator anim;
+    private BoxCollider2D boxCollider;
+    private float wallJumpCooldown;
 
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+        anim = GetComponent<Animator>();
+        boxCollider = GetComponent<BoxCollider2D>();
+    }
     void Update()
     {
-        horizontal = Input.GetAxisRaw("Horizontal");
+        horizontalInput = Input.GetAxisRaw("Horizontal");
 
         if (Input.GetButtonDown("Jump") && IsGrounded())
         {
-            rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
+            Jump();
+//via direct manipulation
+//            rb.velocity = new Vector3(rb.velocity.x, jumpingPower, 0);        }
         }
-
-        if (Input.GetButtonUp("Jump") && rb.velocity.y > 0f)
-        {
-            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
-        }
+//        if (Input.GetButtonUp("Jump") && rb.velocity.y > 0f)
+//        {
+//            rb.velocity = new Vector3(rb.velocity.x, rb.velocity.y * 0.5f, 0);
+//        }
 
         Flip();
+
     }
 
     private void FixedUpdate()
     {
-        rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
+        rb.velocity = new Vector3(horizontalInput * speed, rb.velocity.y, 0);
+                //set animator params
+        anim.SetBool("run", horizontalInput != 0);
+        anim.SetBool("grounded", IsGrounded());
+    
+    }
+
+    private void Jump()
+    {
+        if (IsGrounded())
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpPower);
+            anim.SetTrigger("jump");
+        }
     }
 
     private bool IsGrounded()
     {
-        //If raycast hits we are grounded
+        // if raycast hits we are grounded
+        // at a later date, layer will need to be added for grounded/wallgrab condition
+        
         //Debug.Log(Physics.Raycast( rb.position, Vector3.down, 1.2f));
-        return Physics.Raycast( rb.position, Vector3.down, 1.2f);
+        
+        return Physics.Raycast( rb.position, Vector3.down, 1.0f);
     
         //2D implementation
         //Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
     }
 
+    private bool OnWall()
+    {
+        // if raycast hits we are grabbing a wall
+        // needs wall layers
+        RaycastHit2D raycastHit = Physics2D.BoxCast(boxCollider.bounds.center, boxCollider.bounds.size, 0, new Vector2(transform.localScale.x, 0), 0.1f, wallLayer);
+        return raycastHit.collider != null;
+    }
     private void Flip()
     {
-        if (isFacingRight && horizontal < 0f || !isFacingRight && horizontal > 0f)
+        //check facing bool and input
+        if (isFacingRight && horizontalInput < 0f || !isFacingRight && horizontalInput > 0f)
         {
             isFacingRight = !isFacingRight;
-            Vector3 localScale = transform.localScale;
-            localScale.x *= -1f;
-            transform.localScale = localScale;
+            Debug.Log("FACED: " + isFacingRight);
+            //reflect on y axis
+            Mirror();
         }
+    }
+    private void Mirror()
+    {
+        Vector3 rotationToAdd = new Vector3(0, 180, 0);
+        transform.Rotate(rotationToAdd);
     }
 }
