@@ -13,15 +13,22 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float jumpPower = 8f;
     private float horizontalInput;
     private bool isFacingRight = true;
-    private Animator anim;
+    //public for prototyping
+    public Animator anim;
     private BoxCollider2D boxCollider;
     private float wallJumpCooldown;
+
+    //for combat animation handling
+    public bool isAttacking;
+    public static PlayerMovement instance;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
         boxCollider = GetComponent<BoxCollider2D>();
+        isAttacking = false;
+        instance = this;
     }
     void Update()
     {
@@ -37,9 +44,8 @@ public class PlayerMovement : MonoBehaviour
 //        {
 //            rb.velocity = new Vector3(rb.velocity.x, rb.velocity.y * 0.5f, 0);
 //        }
-
+        Attack();
         Flip();
-
     }
 
     private void FixedUpdate()
@@ -95,5 +101,15 @@ public class PlayerMovement : MonoBehaviour
     {
         Vector3 rotationToAdd = new Vector3(0, 180, 0);
         transform.Rotate(rotationToAdd);
+    }
+
+    void Attack(){
+        //use 'context' for updated input system, using raw input for now
+        //Input.GetButtonDown("Fire1")
+        //Input.GetKeyDown(KeyCode.A)
+        if (Input.GetButtonDown("Fire1") && !isAttacking)
+        {
+            isAttacking = true;
+        }
     }
 }
